@@ -40,7 +40,7 @@ func newEndpointProvider() *mockL2EndpointProvider {
 	}
 }
 
-func (p *mockL2EndpointProvider) EthClient(context.Context) (dial.EthClientInterface, error) {
+func (p *mockL2EndpointProvider) PayloadSource(context.Context) (dial.PayloadSource, error) {
 	return p.ethClient, p.ethClientErr
 }
 
@@ -320,7 +320,7 @@ func TestBatchSubmitter_ThrottlingEndpoints(t *testing.T) {
 
 			// Add a block to the channel manager so unsafeDABytes() returns > 0
 			testBlock := newMiniL2Block(5) // Create a block with 5 transactions
-			err := bs.channelMgr.AddL2Block(testBlock)
+			err := bs.channelMgr.AddL2Block(mustPayloadFromGeth(testBlock))
 			require.NoError(t, err, "Should be able to add block to channel manager")
 
 			// Simulate block loading by calling sendToThrottlingLoop periodically
