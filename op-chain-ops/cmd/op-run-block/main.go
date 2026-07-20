@@ -333,8 +333,13 @@ func Process(logger log.Logger, config *params.ChainConfig,
 	logger.Info("Prepared EVM state")
 	_, _ = fmt.Fprintf(outW, "# Prepared state\n")
 
+	txs, err := block.Transactions.Geth()
+	if err != nil {
+		return nil, fmt.Errorf("could not decode block transactions: %w", err)
+	}
+
 	// Iterate over and process the individual transactions
-	for i, tx := range block.Transactions {
+	for i, tx := range txs {
 		logger.Info("Processing tx", "i", i, "hash", tx.Hash())
 		_, _ = fmt.Fprintf(outW, "# Processing tx %d\n", i)
 		msg, err := core.TransactionToMessage(tx, signer, header.BaseFee)
@@ -357,7 +362,7 @@ func Process(logger log.Logger, config *params.ChainConfig,
 	// Finalize (geth specific term, a.k.a. seal) the block,
 	// applying any consensus engine specific extras (e.g. block rewards, withdrawals-root)
 	engine.Finalize(chainCtx, header, statedb,
-		&types.Body{Transactions: block.Transactions, Withdrawals: *block.Withdrawals})
+		&types.Body{Transactions: txs, Withdrawals: *block.Withdrawals})
 	logger.Info("Completed block processing")
 	_, _ = fmt.Fprintf(outW, "# Completed block processing\n")
 

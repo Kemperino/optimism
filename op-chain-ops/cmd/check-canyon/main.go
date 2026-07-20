@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"os"
 
+	optypes "github.com/ethereum-optimism/optimism/op-core/types"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-service/client"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
@@ -102,7 +103,7 @@ type L2Client interface {
 	BlockByNumber(context.Context, *big.Int) (*types.Block, error)
 	CodeAt(context.Context, common.Address, *big.Int) ([]byte, error)
 	InfoByNumber(context.Context, uint64) (eth.BlockInfo, error)
-	FetchReceipts(context.Context, common.Hash) (eth.BlockInfo, types.Receipts, error)
+	FetchReceipts(context.Context, common.Hash) (eth.BlockInfo, optypes.Receipts, error)
 }
 
 type Client struct {
@@ -128,7 +129,7 @@ func ValidateReceipts(ctx Args, canyonActive bool) error {
 	}
 
 	have := block.ReceiptHash()
-	want := HashList(ManuallyEncodeReceipts(receipts, canyonActive))
+	want := HashList(ManuallyEncodeReceipts(receipts.Geth(), canyonActive))
 
 	if have != want {
 		return fmt.Errorf("Receipts do not look correct. canyonActive: %v. have: %v, want: %v", canyonActive, have, want)
