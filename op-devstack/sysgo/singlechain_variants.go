@@ -120,6 +120,18 @@ func NewMinimalWithConductorsRuntimeWithConfig(t devtest.T, cfg PresetConfig) *S
 	conductorA := startConductorNode(t, "sequencer", runtime.L2Network, runtime.L2CL.(*OpNode), runtime.L2EL, true, false)
 	conductorB := startConductorNode(t, "b", runtime.L2Network, nodeB.CL.(*OpNode), nodeB.EL, false, true)
 	conductorC := startConductorNode(t, "c", runtime.L2Network, nodeC.CL.(*OpNode), nodeC.EL, false, true)
+
+	// Mesh the sequencer nodes over p2p, as in a production HA deployment: the
+	// active sequencer gossips unsafe blocks to the followers, which keeps them
+	// close enough to the raft-committed head for the conductor to start them on
+	// leadership changes (op-conductor only backfills a single missing block).
+	// Peering must happen after startConductorNode, which restarts each op-node
+	// and would drop earlier connections.
+	connectSingleChainNodes(t, runtime.L2EL, runtime.L2CL, nodeB)
+	connectSingleChainNodes(t, runtime.L2EL, runtime.L2CL, nodeC)
+	connectSingleChainNodes(t, nodeB.EL, nodeB.CL, nodeC)
+	runtime.P2PEnabled = true
+
 	startConductorCluster(t, conductorA, []*Conductor{conductorB, conductorC})
 
 	runtime.Conductors = map[string]*Conductor{
