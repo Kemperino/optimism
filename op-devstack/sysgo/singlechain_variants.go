@@ -10,6 +10,7 @@ import (
 
 	opconductor "github.com/ethereum-optimism/optimism/op-conductor/conductor"
 	"github.com/ethereum-optimism/optimism/op-devstack/devtest"
+	"github.com/ethereum-optimism/optimism/op-service/dial"
 	"github.com/ethereum-optimism/optimism/op-service/endpoint"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
@@ -117,22 +118,25 @@ func NewMinimalWithConductorsRuntimeWithConfig(t devtest.T, cfg PresetConfig) *S
 	nodeB := addSingleChainOpNode(t, runtime, "b", true, "", cfg.GlobalL2CLOptions...)
 	nodeC := addSingleChainOpNode(t, runtime, "c", true, "", cfg.GlobalL2CLOptions...)
 
-	conductorA := startConductorNode(t, "sequencer", runtime.L2Network, runtime.L2CL.(*OpNode), runtime.L2EL, true, false)
+	primaryCL := runtime.L2CL.(*OpNode)
+	conductorA := startConductorNode(t, "sequencer", runtime.L2Network, primaryCL, runtime.L2EL, true, false)
 	conductorB := startConductorNode(t, "b", runtime.L2Network, nodeB.CL.(*OpNode), nodeB.EL, false, true)
 	conductorC := startConductorNode(t, "c", runtime.L2Network, nodeC.CL.(*OpNode), nodeC.EL, false, true)
 
-	// Mesh the sequencer nodes over p2p, as in a production HA deployment: the
-	// active sequencer gossips unsafe blocks to the followers, which keeps them
-	// close enough to the raft-committed head for the conductor to start them on
-	// leadership changes (op-conductor only backfills a single missing block).
-	// Peering must happen after startConductorNode, which restarts each op-node
-	// and would drop earlier connections.
-	connectSingleChainNodes(t, runtime.L2EL, runtime.L2CL, nodeB)
-	connectSingleChainNodes(t, runtime.L2EL, runtime.L2CL, nodeC)
-	connectSingleChainNodes(t, nodeB.EL, nodeB.CL, nodeC)
+	// Mesh the sequencer CL nodes over p2p, as in a production HA deployment:
+	// the active sequencer gossips unsafe blocks to the followers, which keeps
+	// them close enough to the raft-committed head for the conductor to start
+	// them on leadership changes (op-conductor only backfills a single missing
+	// block). EL p2p is not needed — unsafe blocks reach the follower ELs via
+	// CL gossip and the engine API. Peering must happen after
+	// startConductorNode, which restarts each op-node and would drop earlier
+	// connections.
+	connectSingleChainCLPeer(t, runtime.L2CL, nodeB.CL)
+	connectSingleChainCLPeer(t, runtime.L2CL, nodeC.CL)
+	connectSingleChainCLPeer(t, nodeB.CL, nodeC.CL)
 	runtime.P2PEnabled = true
 
-	startConductorCluster(t, conductorA, []*Conductor{conductorB, conductorC})
+	startConductorCluster(t, conductorA, primaryCL, []*Conductor{conductorB, conductorC})
 
 	runtime.Conductors = map[string]*Conductor{
 		"sequencer": conductorA,
@@ -284,9 +288,9 @@ func startConductorNode(
 		RaftTrailingLogs:        10240,
 		RaftHeartbeatTimeout:    1000 * time.Millisecond,
 		RaftLeaderLeaseTimeout:  500 * time.Millisecond,
-		NodeRPC:                 opNode.UserRPC(),
-		ExecutionRPC:            l2EL.UserRPC(),
-		Paused:                  paused,
+		NodeRPC:      opNode.UserRPC(),
+		ExecutionRPC: l2EL.UserRPC(),
+		Paused:       paused,
 		HealthCheck: opconductor.HealthCheckConfig{
 			Interval:       3600,
 			UnsafeInterval: 3600,
@@ -331,7 +335,7 @@ func startConductorNode(
 	return out
 }
 
-func startConductorCluster(t devtest.T, bootstrap *Conductor, members []*Conductor) {
+func startConductorCluster(t devtest.T, bootstrap *Conductor, bootstrapNode *OpNode, members []*Conductor) {
 	require := t.Require()
 	ctx, cancel := context.WithTimeout(t.Ctx(), 90*time.Second)
 	defer cancel()
@@ -368,6 +372,30 @@ func startConductorCluster(t devtest.T, bootstrap *Conductor, members []*Conduct
 		return nil
 	})
 	require.NoError(err, "conductor cluster did not converge to expected membership")
+
+	// A fresh Raft FSM holds no unsafe payload, so a conductor refuses to
+	// start a sequencer on its own (ErrNoUnsafeHead). Seed sequencing manually
+	// on the bootstrap node — exactly how an operator bootstraps a production
+	// HA cluster. Once the node seals its first block, op-node commits every
+	// unsafe payload to the conductor, seeding the FSM for later leadership
+	// changes. Wait for that first committed block before resuming the
+	// conductors so their control loops start from a consistent state.
+	rollupClient, err := dial.DialRollupClientWithTimeout(ctx, t.Logger(), bootstrapNode.UserRPC())
+	require.NoError(err, "failed to dial bootstrap sequencer node")
+	syncStatus, err := rollupClient.SyncStatus(ctx)
+	require.NoError(err, "failed to fetch bootstrap sequencer sync status")
+	require.NoError(rollupClient.StartSequencer(ctx, syncStatus.UnsafeL2.Hash), "failed to start sequencing on bootstrap node")
+	err = retry.Do0(ctx, 90, retry.Fixed(500*time.Millisecond), func() error {
+		status, err := rollupClient.SyncStatus(ctx)
+		if err != nil {
+			return err
+		}
+		if status.UnsafeL2.Number <= syncStatus.UnsafeL2.Number {
+			return fmt.Errorf("bootstrap sequencer has not sealed a block yet, unsafe head at %d", status.UnsafeL2.Number)
+		}
+		return nil
+	})
+	require.NoError(err, "bootstrap sequencer never sealed its first block")
 
 	cluster := append([]*Conductor{bootstrap}, members...)
 	for _, conductor := range cluster {
