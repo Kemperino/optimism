@@ -221,7 +221,7 @@ arg: --dev.block-time <BLOCK_TIME> help: Interval between blocks.
 arg: --dev.payload-wait-time <PAYLOAD_WAIT_TIME> help: Time to wait after initiating payload building before resolving.
 arg: --dev.mnemonic <MNEMONIC> [default: test test test test test test test test test test test junk] help: Derive dev accounts from a fixed mnemonic instead of random ones.
 arg: --full [default: false] help: Run full node. Only the most recent [`MINIMUM_UNWIND_SAFE_DISTANCE`] block states are stored
-arg: --minimal [default: false] help: Run minimal storage mode with maximum pruning and smaller static files
+arg: --minimal [default: false] [hidden] help: Run minimal storage mode with maximum pruning and smaller static files
 arg: --prune.block-interval <BLOCK_INTERVAL> [aliases: block-interval] help: Minimum pruning interval measured in blocks
 arg: --prune.sender-recovery.full [aliases: prune.senderrecovery.full] help: Prunes all sender recovery data
 arg: --prune.sender-recovery.distance <BLOCKS> [aliases: prune.senderrecovery.distance] help: Prune sender recovery data before the `head-N` block number. In other words, keep last N + 1 blocks
