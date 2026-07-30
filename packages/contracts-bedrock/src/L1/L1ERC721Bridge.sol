@@ -46,13 +46,7 @@ contract L1ERC721Bridge is ERC721Bridge, ProxyAdminOwnedBase, ISemver {
     /// @notice Initializes the contract.
     /// @param _messenger   Contract of the CrossDomainMessenger on this network.
     /// @param _systemConfig Contract of the SystemConfig contract on this network.
-    function initialize(
-        ICrossDomainMessenger _messenger,
-        ISystemConfig _systemConfig
-    )
-        external
-        initializer
-    {
+    function initialize(ICrossDomainMessenger _messenger, ISystemConfig _systemConfig) external initializer {
         // Initialization transactions must come from the ProxyAdmin or its owner.
         _assertOnlyProxyAdminOrProxyAdminOwner();
 

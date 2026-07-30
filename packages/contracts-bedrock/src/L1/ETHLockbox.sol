@@ -89,13 +89,7 @@ contract ETHLockbox is ProxyAdminOwnedBase, Initializable, ISemver {
     ///      contracts will point to the same pause identifier (the lockbox itself). Therefore, it
     ///      doesn't matter which SystemConfig is used here as long as it belongs to one of the
     ///      chains that share the lockbox.
-    function initialize(
-        ISystemConfig _systemConfig,
-        IOptimismPortal[] calldata _portals
-    )
-        external
-        initializer
-    {
+    function initialize(ISystemConfig _systemConfig, IOptimismPortal[] calldata _portals) external initializer {
         // Initialization transactions must come from the ProxyAdmin or its owner.
         _assertOnlyProxyAdminOrProxyAdminOwner();
 

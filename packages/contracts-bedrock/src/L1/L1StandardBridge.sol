@@ -100,13 +100,7 @@ contract L1StandardBridge is StandardBridge, ProxyAdminOwnedBase, ISemver {
     /// @notice Initializer.
     /// @param _messenger        Contract for the CrossDomainMessenger on this network.
     /// @param _systemConfig Contract for the SystemConfig on this network.
-    function initialize(
-        ICrossDomainMessenger _messenger,
-        ISystemConfig _systemConfig
-    )
-        external
-        initializer
-    {
+    function initialize(ICrossDomainMessenger _messenger, ISystemConfig _systemConfig) external initializer {
         // Initialization transactions must come from the ProxyAdmin or its owner.
         _assertOnlyProxyAdminOrProxyAdminOwner();
 
