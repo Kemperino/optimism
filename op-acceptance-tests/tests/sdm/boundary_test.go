@@ -7,6 +7,9 @@ import (
 	sdmpkg "github.com/ethereum-optimism/optimism/op-chain-ops/pkg/sdm"
 	"github.com/ethereum-optimism/optimism/op-core/forks"
 	"github.com/ethereum-optimism/optimism/op-devstack/devtest"
+	"github.com/ethereum-optimism/optimism/op-devstack/dsl"
+	"github.com/ethereum-optimism/optimism/op-service/eth"
+	"github.com/ethereum-optimism/optimism/op-service/eth/safety"
 )
 
 // boundaryInteropOffset schedules Interop a few blocks after L2 genesis so the test
@@ -71,5 +74,15 @@ func TestSDMActivatesAtInteropBoundary(gt *testing.T) {
 	t.Require().Equal(sdmpkg.PostExecPayloadVersion, payload.Version,
 		"post-exec payload version must be 1")
 	t.Require().NotEmpty(payload.GasRefundEntries,
-		"post-exec payload must carry refund entries for the repeated-slot workload")
+		"post-exec payload must carry refund entries for the fixture workload")
+	assertFixtureBlockOracle(t, sys, postBlock, postBlockNum)
+
+	sys.L2Batcher.Start()
+	dsl.CheckAll(t,
+		sys.L2CLVerifier.ReachedRefFn(safety.CrossSafe, postRef.ID(), 120),
+		sys.L2ELVerifier.ReachedFn(eth.Safe, postBlockNum, 120),
+	)
+	verifierRef := sys.L2ELVerifier.BlockRefByNumber(postBlockNum)
+	t.Require().Equal(postRef.Hash, verifierRef.Hash,
+		"stock verifier must safely derive the post-activation fixture block")
 }

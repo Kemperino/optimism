@@ -40,7 +40,7 @@ use revm::{
 
 use crate::post_exec::{
     PostExecEvm, PostExecEvmFactoryAdapter, PostExecEvmFactoryHooks, PostExecExecutedTx,
-    PostExecTxContext, PostExecTxKind, WarmingRefundEvent,
+    PostExecRefundEvent, PostExecRefundInspector, PostExecTxContext, PostExecTxKind,
 };
 
 mod canyon;
@@ -281,7 +281,7 @@ pub struct PostExecAdjustment {
     /// (post-Isthmus).
     pub operator_fee_balance_delta: U256,
     /// Exact warming refund attribution events that produced the refund.
-    pub warming_events: Vec<WarmingRefundEvent>,
+    pub warming_events: Vec<PostExecRefundEvent>,
 }
 
 /// The result of executing an OP transaction.
@@ -371,7 +371,7 @@ pub struct OpBlockExecutor<Evm, R: OpReceiptBuilder, Spec> {
     /// Post-exec execution state (mode and producer/verifier working state).
     pub post_exec: PostExecState,
     /// Per-transaction exact warming refund attribution events aligned with receipts.
-    pub warming_events_by_tx: Vec<Vec<WarmingRefundEvent>>,
+    pub warming_events_by_tx: Vec<Vec<PostExecRefundEvent>>,
 }
 
 impl<E, R, Spec> OpBlockExecutor<E, R, Spec>
@@ -428,7 +428,7 @@ where
     }
 
     /// Take the exact per-transaction warming refund attribution events aligned with receipts.
-    pub fn take_warming_events_by_tx(&mut self) -> Vec<Vec<WarmingRefundEvent>> {
+    pub fn take_warming_events_by_tx(&mut self) -> Vec<Vec<PostExecRefundEvent>> {
         core::mem::take(&mut self.warming_events_by_tx)
     }
 }
@@ -1249,9 +1249,10 @@ where
     }
 }
 
-impl<R, Spec, Tx> BlockExecutorFactory for OpBlockExecutorFactory<R, Spec, OpEvmFactory<Tx>>
+impl<ReceiptBuilder, Spec, Tx, RefundPolicy> BlockExecutorFactory
+    for OpBlockExecutorFactory<ReceiptBuilder, Spec, OpEvmFactory<Tx, RefundPolicy>>
 where
-    R: OpReceiptBuilder<
+    ReceiptBuilder: OpReceiptBuilder<
             Transaction: Transaction + Encodable2718 + OpConsensusTransaction,
             Receipt: TxReceipt,
         > + 'static,
@@ -1261,22 +1262,30 @@ where
         + Default
         + Clone
         + core::fmt::Debug
-        + FromRecoveredTx<R::Transaction>
-        + FromTxWithEncoded<R::Transaction>
+        + FromRecoveredTx<ReceiptBuilder::Transaction>
+        + FromTxWithEncoded<ReceiptBuilder::Transaction>
         + OpTxEnv
         + 'static,
+    RefundPolicy: Default + PostExecRefundInspector + 'static,
     Self: 'static,
 {
-    type EvmFactory = OpEvmFactory<Tx>;
+    type EvmFactory = OpEvmFactory<Tx, RefundPolicy>;
     type ExecutionCtx<'a> = OpBlockExecutionCtx;
-    type Transaction = R::Transaction;
-    type Receipt = R::Receipt;
+    type Transaction = ReceiptBuilder::Transaction;
+    type Receipt = ReceiptBuilder::Receipt;
     type TxExecutionResult = OpTxResult<
-        <OpEvmFactory<Tx> as EvmFactory>::HaltReason,
-        <R::Transaction as TransactionEnvelope>::TxType,
+        <OpEvmFactory<Tx, RefundPolicy> as EvmFactory>::HaltReason,
+        <ReceiptBuilder::Transaction as TransactionEnvelope>::TxType,
     >;
-    type Executor<'a, DB: StateDB, I: Inspector<<OpEvmFactory<Tx> as EvmFactory>::Context<DB>>> =
-        OpBlockExecutor<<OpEvmFactory<Tx> as EvmFactory>::Evm<DB, I>, &'a R, &'a Spec>;
+    type Executor<
+        'a,
+        DB: StateDB,
+        I: Inspector<<OpEvmFactory<Tx, RefundPolicy> as EvmFactory>::Context<DB>>,
+    > = OpBlockExecutor<
+        <OpEvmFactory<Tx, RefundPolicy> as EvmFactory>::Evm<DB, I>,
+        &'a ReceiptBuilder,
+        &'a Spec,
+    >;
 
     fn evm_factory(&self) -> &Self::EvmFactory {
         &self.evm_factory
@@ -1284,12 +1293,12 @@ where
 
     fn create_executor<'a, DB, I>(
         &'a self,
-        evm: <OpEvmFactory<Tx> as EvmFactory>::Evm<DB, I>,
+        evm: <OpEvmFactory<Tx, RefundPolicy> as EvmFactory>::Evm<DB, I>,
         ctx: Self::ExecutionCtx<'a>,
     ) -> Self::Executor<'a, DB, I>
     where
         DB: StateDB,
-        I: Inspector<<OpEvmFactory<Tx> as EvmFactory>::Context<DB>>,
+        I: Inspector<<OpEvmFactory<Tx, RefundPolicy> as EvmFactory>::Context<DB>>,
     {
         OpBlockExecutor::new(evm, ctx, &self.spec, &self.receipt_builder)
     }

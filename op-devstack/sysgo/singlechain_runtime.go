@@ -39,9 +39,8 @@ type singleChainRuntimeWorld struct {
 }
 
 type singleChainPrimaryRuntime struct {
-	EL          L2ELNode
-	CL          L2CLNode
-	Flashblocks *FlashblocksRuntimeSupport
+	EL L2ELNode
+	CL L2CLNode
 }
 
 type singleChainRuntimeSpec struct {
@@ -99,7 +98,14 @@ func startDefaultSingleChainPrimary(
 		cfg.SafeDBPath = safeDBPath
 	})}
 	l2CLOptions = append(l2CLOptions, cfg.GlobalL2CLOptions...)
-	l2EL := startSequencerEL(t, world.L2Network, jwtPath, jwtSecret, NewELNodeIdentity(0))
+	l2EL := startSequencerEL(
+		t,
+		world.L2Network,
+		jwtPath,
+		jwtSecret,
+		NewELNodeIdentity(0),
+		cfg.OpRethOptions...,
+	)
 	if world.Interop != nil {
 		l2CL := startL2CLNode(t, keys, world.L1Network, world.L2Network, l1EL, l1CL, l2EL, jwtSecret, l2CLNodeStartConfig{
 			Key:           "sequencer",
@@ -174,14 +180,13 @@ func newSingleChainRuntimeWithConfig(t devtest.T, cfg PresetConfig, spec singleC
 		Nodes: map[string]*SingleChainNodeRuntime{
 			primaryNode.Name: primaryNode,
 		},
-		Flashblocks: primary.Flashblocks,
-		Interop:     world.Interop,
+		Interop: world.Interop,
 	}
 }
 
 // SingleChainRuntime is the shared DAG runtime for single-chain preset topologies.
-// It is the root for minimal, flashblocks, follower-node, sync-tester, conductor,
-// and no-supernode interop variants.
+// It is the root for minimal, follower-node, sync-tester, conductor, and no-supernode interop
+// variants.
 func NewMinimalRuntime(t devtest.T) *SingleChainRuntime {
 	return NewMinimalRuntimeWithConfig(t, PresetConfig{})
 }

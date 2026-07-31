@@ -69,7 +69,10 @@ pub use tx::OpTx;
 pub use alloy_op_evm::{
     OpBlockExecutionCtx, OpBlockExecutorFactory, OpEvm, OpEvmFactory, PostExecMode,
     PreRefundGasUsed,
-    post_exec::{PostExecExecutorExt, WarmingRefundEvent, WarmingRefundKind, WarmingState},
+    post_exec::{
+        PostExecEvmFactoryAdapter, PostExecExecutedTx, PostExecExecutorExt, PostExecRefundEvent,
+        PostExecRefundInspector, PostExecRefundKind, PostExecTxContext, PostExecTxKind,
+    },
 };
 
 mod post_exec_ext;
@@ -122,6 +125,21 @@ impl<ChainSpec, N: NodePrimitives, R, EvmFactory> OpEvmConfig<ChainSpec, N, R, E
             executor_factory: OpBlockExecutorFactory::new(receipt_builder, chain_spec, evm_factory),
             _pd: core::marker::PhantomData,
         }
+    }
+
+    /// Clones this configuration's chain spec and receipt builder with a different EVM factory.
+    pub fn clone_with_evm_factory<OtherEvmFactory>(
+        &self,
+        evm_factory: OtherEvmFactory,
+    ) -> OpEvmConfig<ChainSpec, N, R, OtherEvmFactory>
+    where
+        R: Clone,
+    {
+        OpEvmConfig::new_with_evm_factory(
+            self.executor_factory.spec().clone(),
+            self.executor_factory.receipt_builder().clone(),
+            evm_factory,
+        )
     }
 }
 

@@ -51,7 +51,7 @@ run_scenario() {
   # Seed the JSON and run the routing policy as the pipeline would.
   echo "${json_seed}" > "${OUTPUT}"
   TRIGGER_SOURCE="${trigger}" BRANCH="${branch}" TAG="${tag}" SCHEDULE_NAME="${schedule}" \
-    bash "${ROUTING_SCRIPT}" >/dev/null || true
+    bash "${ROUTING_SCRIPT}" > /dev/null || true
 
   local _json
   _json=$(cat "${OUTPUT}")

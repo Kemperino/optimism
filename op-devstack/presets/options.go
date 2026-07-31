@@ -234,22 +234,6 @@ func WithZKProposerOption(opt sysgo.ZKProposerOption) Option {
 	}
 }
 
-func WithOPRBuilderOption(opt sysgo.OPRBuilderNodeOption) Option {
-	var kinds optionKinds
-	if opt != nil {
-		kinds = optionKindOPRBuilder
-	}
-	return option{
-		kinds: kinds,
-		applyFn: func(cfg *sysgo.PresetConfig) {
-			if opt == nil {
-				return
-			}
-			cfg.OPRBuilderOptions = append(cfg.OPRBuilderOptions, opt)
-		},
-	}
-}
-
 func WithOpRethOption(opt sysgo.OpRethOption) Option {
 	var kinds optionKinds
 	if opt != nil {

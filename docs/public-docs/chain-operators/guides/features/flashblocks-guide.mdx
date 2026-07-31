@@ -4,6 +4,12 @@ description: "Configure rollup-boost, op-rbuilder, and flashblocks-websocket-pro
 diataxis: how-to
 ---
 
+<Note>
+`op-rbuilder` and `rollup-boost` are maintained and distributed externally. The Optimism
+monorepo does not vendor their source or publish their container images. Use the upstream
+Flashbots releases and documentation linked below.
+</Note>
+
 This guide shows how to enable Flashblocks on an OP Stack chain: running `rollup-boost` as the block-building coordination layer, streaming flashblocks from `op-rbuilder`, and serving the stream to RPC providers through `flashblocks-websocket-proxy` — in both single-sequencer and high-availability (HA) multi-sequencer setups.
 
 For what Flashblocks are, the component architecture, and the lifecycle of a flashblock, see the [Flashblocks explainer](/op-stack/features/flashblocks).

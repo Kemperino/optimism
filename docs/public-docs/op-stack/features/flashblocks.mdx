@@ -4,6 +4,11 @@ description: Understand how Flashblocks deliver sub-second pre-confirmations on 
 diataxis: explanation
 ---
 
+<Note>
+The `op-rbuilder` and `rollup-boost` implementations described here are maintained and distributed
+externally; their source and images are not published from the Optimism monorepo.
+</Note>
+
 Flashblocks is a block builder sidecar for OP Stack chains that delivers sub-second transaction confirmations - 250 ms on OP Mainnet, configurable down to 200 ms.
 
 By streaming pre-confirmations, "signals" that arrive before the next block is finalized, Flashblocks make OP Stack chains up to 10x faster, unlocking seamless user experiences without compromising security guarantees.
