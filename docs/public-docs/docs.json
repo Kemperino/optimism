@@ -1989,11 +1989,19 @@
     },
     {
       "source": "/rust/kona/node/install/binaries",
-      "destination": "/node-operators/kona-node/install/binaries"
+      "destination": "/node-operators/kona-node/run/binary"
     },
     {
       "source": "/rust/kona/node/install/docker",
-      "destination": "/node-operators/kona-node/install/docker"
+      "destination": "/node-operators/kona-node/run/docker"
+    },
+    {
+      "source": "/node-operators/kona-node/install/binaries",
+      "destination": "/node-operators/kona-node/run/binary"
+    },
+    {
+      "source": "/node-operators/kona-node/install/docker",
+      "destination": "/node-operators/kona-node/run/docker"
     },
     {
       "source": "/rust/kona/node/install/source",
@@ -2612,7 +2620,8 @@
                   "/op-stack/contribute/solution-guide",
                   "/op-stack/contribute/learning-unit",
                   "/op-stack/contribute/curriculum-hub",
-                  "/op-stack/contribute/router-landing"
+                  "/op-stack/contribute/router-landing",
+                  "/op-stack/contribute/notice"
                 ]
               },
               "/op-stack/contribute/component-hub-template"
@@ -2827,8 +2836,6 @@
                 "group": "Installation",
                 "pages": [
                   "node-operators/kona-node/install/overview",
-                  "node-operators/kona-node/install/binaries",
-                  "node-operators/kona-node/install/docker",
                   "node-operators/kona-node/install/source"
                 ]
               },
@@ -3438,6 +3445,7 @@
               {
                 "group": "Network Upgrades",
                 "pages": [
+                  "notices/upgrade-20",
                   "notices/interop-prep"
                 ]
               },

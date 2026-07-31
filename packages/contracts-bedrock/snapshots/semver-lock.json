@@ -32,12 +32,12 @@
     "sourceCodeHash": "0x5f8fd5a452e222b78fe9202210154f2b637e2fb5d49f63e29d39283394af9a6b"
   },
   "src/L1/SystemConfig.sol:SystemConfig": {
-    "initCodeHash": "0xb021c40df21ad055a8fcc3e08f4a5bd37d0ba87d42f80f3409f04ade150d5992",
-    "sourceCodeHash": "0x2346e655818ee8b43198fdcddf561215aa98a64fd46f36ac70f8395cec20df6a"
+    "initCodeHash": "0xf4ac1154aeca8c40920b6008756825a264078ae906618400100c5e53d20ef795",
+    "sourceCodeHash": "0x0a636bc509e697f895f2c2b6ce2ced422d31d18336ad57241ef5ea6e87c6c3b9"
   },
   "src/L1/opcm/OPContractsManagerV2.sol:OPContractsManagerV2": {
-    "initCodeHash": "0x0a6a9baa9913e6feb0c0d1606f037c22205cbe83e709de3c9ca0ba03a0301037",
-    "sourceCodeHash": "0xf37254fcca4a499b6487c6fc5fba880ef2dbd785cea505321deee5fcb28c4d06"
+    "initCodeHash": "0x5cf001b0bc8758c996db25ebdfe181516bfeb0697d066bbde2e907e76aaefd03",
+    "sourceCodeHash": "0xa2b3f54c8350ce4408760a45f631acad4458e466ab7c0bb1a2b7ff4dadf63511"
   },
   "src/L2/BaseFeeVault.sol:BaseFeeVault": {
     "initCodeHash": "0x18650c65fa6f23fefc6f0c5fff605f12be99fce0bfbcbc0644403138e4c8bb12",
