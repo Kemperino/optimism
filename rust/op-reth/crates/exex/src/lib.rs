@@ -215,6 +215,12 @@ where
             pruner,
         );
 
+        // Reconcile against the durable execution head on every startup. A crash may lose proof
+        // blocks that were acknowledged to the ExEx manager but still buffered below the
+        // persistence threshold. Those blocks will not produce fresh notifications after restart,
+        // so explicitly seed the engine's existing catch-up path.
+        engine_handle.sync_to(self.ctx.provider().best_block_number()?)?;
+
         while let Some(notification) = self.ctx.notifications.try_next().await? {
             self.handle_notification(notification, &engine_handle)?;
         }

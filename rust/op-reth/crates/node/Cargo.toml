@@ -110,6 +110,7 @@ jsonrpsee.workspace = true
 # Fatal-signal handler in tests/it/crash_backtrace.rs.
 libc.workspace = true
 op-alloy-network.workspace = true
+tempfile.workspace = true
 
 [features]
 default = ["reth-codec"]
